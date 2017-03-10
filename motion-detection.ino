@@ -17,8 +17,6 @@ const char* password = "----";
 void setup() {
   USE_SERIAL.begin(115200);
 
-  WiFi.begin(ssid, password);
-
   waitUntilConnection();
 }
 
@@ -46,6 +44,8 @@ void loop() {
 }
 
 void waitUntilConnection() {
+  WiFi.begin(ssid, password);
+
   while (WiFi.status() != WL_CONNECTED) {  //Wait for the WiFI connection completion
     delay(1000);
     USE_SERIAL.println("Waiting for connection");
