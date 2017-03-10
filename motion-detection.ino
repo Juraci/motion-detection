@@ -1,16 +1,8 @@
-/**
-   BasicHTTPClient.ino
-
-    Created on: 24.05.2015
-
-*/
-
 #include <Arduino.h>
 
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #define USE_SERIAL Serial
-
 
 const char* ssid = "----";
 const char* password = "----";
@@ -46,13 +38,13 @@ void loop() {
     waitUntilConnection();
   }
 
-  delay(500); 
+  delay(500);
 }
 
 void waitUntilConnection() {
   WiFi.begin(ssid, password);
 
-  while (WiFi.status() != WL_CONNECTED) {  //Wait for the WiFI connection completion
+  while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     USE_SERIAL.println("Waiting for connection");
   }
@@ -60,7 +52,6 @@ void waitUntilConnection() {
 
 void post() {
   HTTPClient http;
-  
   http.begin(endpoint, httpsFingerPrint);
   http.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
@@ -70,4 +61,3 @@ void post() {
   http.writeToStream(&Serial);
   http.end();
 }
-
