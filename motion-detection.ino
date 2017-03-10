@@ -11,12 +11,14 @@
 #include <ESP8266HTTPClient.h>
 #define USE_SERIAL Serial
 
+
 const char* ssid = "----";
 const char* password = "----";
+const char* boardId = "boardId=proto01";
 const char* endpoint = "https://nodemcu-listener.herokuapp.com/motion";
 const char* httpsFingerPrint = "F5 69 8C CA 29 68 5E 47 26 38 C5 1A 18 F1 8A 6A EA 60 56 4D";
 const int pinOut = D0;
-const int pinIn = D7;
+const int pinIn = D7; 
 
 void setup() {
   USE_SERIAL.begin(115200);
@@ -44,7 +46,7 @@ void loop() {
     waitUntilConnection();
   }
 
-  delay(1000); 
+  delay(500); 
 }
 
 void waitUntilConnection() {
@@ -60,9 +62,9 @@ void post() {
   HTTPClient http;
   
   http.begin(endpoint, httpsFingerPrint);
-  http.addHeader("Content-Type", "text/plain");
+  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
-  int httpCode = http.POST("");
+  int httpCode = http.POST(boardId);
   USE_SERIAL.println(httpCode);
 
   http.writeToStream(&Serial);
