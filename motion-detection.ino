@@ -12,6 +12,9 @@ const char* httpsFingerPrint = "F5 69 8C CA 29 68 5E 47 26 38 C5 1A 18 F1 8A 6A 
 const int pinOut = D0;
 const int pinIn = D7; 
 
+void waitUntilConnection();
+void post(String uri, String fingerPrint, String id);
+
 void setup() {
   USE_SERIAL.begin(115200);
   pinMode(pinOut, OUTPUT);
@@ -25,7 +28,7 @@ void loop() {
     if(digitalRead(pinIn) == HIGH) {
       digitalWrite(pinOut, HIGH);
       USE_SERIAL.print("Motion started!\n");
-      post();
+      post(endpoint, httpsFingerPrint, boardId);
       while(digitalRead(pinIn) == HIGH) {
         delay(500);
       }
@@ -50,12 +53,12 @@ void waitUntilConnection() {
   }
 }
 
-void post() {
+void post(String uri, String fingerPrint, String id) {
   HTTPClient http;
-  http.begin(endpoint, httpsFingerPrint);
+  http.begin(uri, fingerPrint);
   http.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
-  int httpCode = http.POST(boardId);
+  int httpCode = http.POST(id);
   USE_SERIAL.println(httpCode);
 
   http.writeToStream(&Serial);
