@@ -9,56 +9,70 @@ const char* password = "----";
 const char* boardId = "boardId=proto01";
 const char* endpoint = "https://nodemcu-listener.herokuapp.com/motion";
 const char* httpsFingerPrint = "F5 69 8C CA 29 68 5E 47 26 38 C5 1A 18 F1 8A 6A EA 60 56 4D";
-const int pinOut = D0;
-const int pinIn = D7; 
 
-void waitUntilConnection();
-void post(String uri, String fingerPrint, String id);
+const int sensorInput = D7;
+const int motionLedOut = D0;
+
+const int mainLoopDelay = 1000;
+const int coolDownDelay = 500;
+const int wifiDelay = 1000;
+
+void waitUntilConnection(const char* id, const char* pass, int waitTime);
+void post();
+void onSensorActivity(void (*callback)());
 
 void setup() {
   USE_SERIAL.begin(115200);
-  pinMode(pinOut, OUTPUT);
-  pinMode(pinIn, INPUT);
-  waitUntilConnection();
+  pinMode(motionLedOut, OUTPUT);
+  pinMode(sensorInput, INPUT);
+  waitUntilConnection(ssid, password, wifiDelay);
 }
 
 void loop() {
   if (WiFi.status() == WL_CONNECTED) {
 
-    if(digitalRead(pinIn) == HIGH) {
-      digitalWrite(pinOut, HIGH);
-      USE_SERIAL.print("Motion started!\n");
-      post(endpoint, httpsFingerPrint, boardId);
-      while(digitalRead(pinIn) == HIGH) {
-        delay(500);
-      }
-      digitalWrite(pinOut, LOW);
-      USE_SERIAL.print("Motion ended!\n");
-    }
+    onSensorActivity(post);
 
   } else {
     USE_SERIAL.println("Connection lost");
-    waitUntilConnection();
+    waitUntilConnection(ssid, password, wifiDelay);
   }
 
-  delay(500);
+  delay(mainLoopDelay);
 }
 
-void waitUntilConnection() {
-  WiFi.begin(ssid, password);
+void onSensorActivity(void (*callback)()) {
+  if(digitalRead(sensorInput) == LOW) return;
+
+  digitalWrite(motionLedOut, HIGH);
+  USE_SERIAL.print("Motion started!\n");
+
+  (*callback)();
+
+  while(digitalRead(sensorInput) == HIGH) {
+    delay(coolDownDelay);
+  }
+
+  digitalWrite(motionLedOut, LOW);
+
+  USE_SERIAL.print("\nMotion ended!\n");
+}
+
+void waitUntilConnection(const char* id, const char* pass, int waitTime) {
+  WiFi.begin(id, pass);
 
   while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
+    delay(waitTime);
     USE_SERIAL.println("Waiting for connection");
   }
 }
 
-void post(String uri, String fingerPrint, String id) {
+void post() {
   HTTPClient http;
-  http.begin(uri, fingerPrint);
+  http.begin(endpoint, httpsFingerPrint);
   http.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
-  int httpCode = http.POST(id);
+  int httpCode = http.POST(boardId);
   USE_SERIAL.println(httpCode);
 
   http.writeToStream(&Serial);
