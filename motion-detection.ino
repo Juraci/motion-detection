@@ -9,6 +9,7 @@ const char* password = "----";
 const char* boardId = "boardId=proto01";
 const char* endpoint = "https://nodemcu-listener.herokuapp.com/motion";
 const char* httpsFingerPrint = "F5 69 8C CA 29 68 5E 47 26 38 C5 1A 18 F1 8A 6A EA 60 56 4D";
+const char* authToken = "----";
 
 const int sensorInput = D7;
 const int motionLedOut = D0;
@@ -70,6 +71,7 @@ void waitUntilConnection(const char* id, const char* pass, int waitTime) {
 void post() {
   HTTPClient http;
   http.begin(endpoint, httpsFingerPrint);
+  http.setAuthorization(authToken);
   http.addHeader("Content-Type", "application/x-www-form-urlencoded");
 
   int httpCode = http.POST(boardId);
