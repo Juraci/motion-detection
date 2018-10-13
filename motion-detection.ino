@@ -1,5 +1,5 @@
 #include <Arduino.h>
-
+#include <WifiWrapper.h>
 #include <MqttWrapper.h>
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
@@ -8,29 +8,29 @@
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-const char* ssid = "______";
-const char* password = "______";
+char* ssid = "____";
+char* password = "____";
 
-char* mqttServer = "______";
+char* mqttServer = "____";
 int mqttPort = 17152;
-char* clientId = "______";
-char* outTopic = "______";
-char* inTopic = "______";
-char* brokerUser = "______";
-char* brokerPassword = "______";
+char* clientId = "----";
+char* outTopic = "____";
+char* inTopic = "____";
+char* brokerUser = "____";
+char* brokerPassword = "____";
+long now = 0;
+long lastMsg = 0;
 
 const int sensorInput = D7;
 const int motionLedOut = D0;
 
 const int mainLoopDelay = 1000;
-const int coolDownDelay = 500;
-const int wifiDelay = 500;
+const int coolDownDelay = 1000;
 
-void waitUntilConnection(const char* id, const char* pass, int waitTime);
 void callback(char* topic, byte* payload, unsigned int length);
-void mqttPublish();
 void onSensorActivity();
 
+WifiWrapper wifi(ssid, password);
 MqttWrapper mqtt(mqttServer, clientId, brokerUser, brokerPassword, mqttPort, client);
 
 void setup() {
@@ -38,7 +38,7 @@ void setup() {
   pinMode(motionLedOut, OUTPUT);
   pinMode(sensorInput, INPUT);
 
-  waitUntilConnection(ssid, password, wifiDelay);
+  wifi.waitForConnection();
   mqtt.setup();
   mqtt.setTopics(inTopic, outTopic);
   mqtt.setCallback(callback);
@@ -46,14 +46,15 @@ void setup() {
 }
 
 void loop() {
-  if (WiFi.status() == WL_CONNECTED) {
+  wifi.waitForConnection();
 
-    mqtt.loop();
-    onSensorActivity();
+  mqtt.loop();
+  onSensorActivity();
 
-  } else {
-    USE_SERIAL.println("Connection lost");
-    waitUntilConnection(ssid, password, wifiDelay);
+  now = millis();
+  if (now - lastMsg >= 10000) {
+    lastMsg = now;
+    mqtt.publish("0");
   }
 
   delay(mainLoopDelay);
@@ -65,28 +66,14 @@ void onSensorActivity() {
   digitalWrite(motionLedOut, HIGH);
   USE_SERIAL.print("Motion started!\n");
 
-  mqtt.publish("1");
-
   while(digitalRead(sensorInput) == HIGH) {
+    mqtt.publish("1");
     delay(coolDownDelay);
   }
 
-  mqtt.publish("0");
   digitalWrite(motionLedOut, LOW);
 
   USE_SERIAL.print("\nMotion ended!\n");
-}
-
-void waitUntilConnection(const char* id, const char* pass, int waitTime) {
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(id, pass);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(waitTime);
-    USE_SERIAL.println("Waiting for connection");
-  }
-
-  USE_SERIAL.println("WiFi connected");
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
